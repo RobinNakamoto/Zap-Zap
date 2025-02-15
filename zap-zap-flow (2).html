@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZapZap Flow Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .page { display: none; }
+        .page.active { display: block; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Page 1: Tip a Tweet -->
+    <div id="page1" class="page active p-6 max-w-lg mx-auto">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h1 class="text-2xl font-bold mb-4">Tip a Tweet</h1>
+            <div class="space-y-4">
+                <input type="text" id="tweetUrl" placeholder="Paste tweet URL here" 
+                    class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button onclick="validateAndProceed()" 
+                    class="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                    Tip this tweet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 2: Send a tip message -->
+    <div id="page2" class="page p-6 max-w-lg mx-auto">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h1 class="text-2xl font-bold mb-4">Send a tip message</h1>
+            <button onclick="showPage(1)" 
+                class="mb-4 text-blue-500 hover:text-blue-600 flex items-center">
+                <span class="mr-1">←</span> Back
+            </button>
+            <div class="space-y-4">
+                <textarea id="tipMessage" placeholder="Write your tip message here" 
+                    class="w-full p-2 border rounded h-32 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                <button onclick="proceedToAmount()" 
+                    class="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                    Next
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 3: Set tip amount -->
+    <div id="page3" class="page p-6 max-w-lg mx-auto">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h1 class="text-2xl font-bold mb-4">Set tip amount</h1>
+            <button onclick="showPage(2)" 
+                class="mb-4 text-blue-500 hover:text-blue-600 flex items-center">
+                <span class="mr-1">←</span> Back
+            </button>
+            <p class="mb-4">Tipping: <span id="recipientUsername" class="font-bold"></span></p>
+            <div class="space-y-4">
+                <input type="number" id="tipAmount" placeholder="Amount in sats" 
+                    class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button onclick="proceedToSuccess()" 
+                    class="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                    Next
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 4: Success -->
+    <div id="page4" class="page p-6 max-w-lg mx-auto">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h1 class="text-2xl font-bold mb-4">Tip Success!</h1>
+            <p class="mb-6" id="successMessage"></p>
+            <div class="space-y-4">
+                <button onclick="postToTwitter()" 
+                    class="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                    Tweet it!
+                </button>
+                <button onclick="resetFlow()" 
+                    class="w-full border border-blue-500 text-blue-500 py-2 px-4 rounded hover:bg-blue-50">
+                    Send another Tip
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let flowData = {
+            tweetUrl: '',
+            tweetId: '',
+            username: '',
+            message: '',
+            amount: 0
+        };
+
+        function showPage(pageNum) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(`page${pageNum}`).classList.add('active');
+        }
+
+        function extractTwitterInfo(url) {
+            const match = url.match(/(?:twitter\.com|x\.com)\/([^\/]+)\/status\/(\d+)/);
+            return match ? { username: match[1], tweetId: match[2] } : null;
+        }
+
+        function validateAndProceed() {
+            const url = document.getElementById('tweetUrl').value.trim();
+            const twitterInfo = extractTwitterInfo(url);
+            
+            if (!twitterInfo) {
+                alert('Please enter a valid Twitter URL');
+                return;
+            }
+
+            flowData.tweetUrl = url;
+            flowData.tweetId = twitterInfo.tweetId;
+            flowData.username = twitterInfo.username;
+            showPage(2);
+        }
+
+        function proceedToAmount() {
+            flowData.message = document.getElementById('tipMessage').value.trim();
+            document.getElementById('recipientUsername').textContent = `@${flowData.username}`;
+            showPage(3);
+        }
+
+        function proceedToSuccess() {
+            flowData.amount = document.getElementById('tipAmount').value;
+            const successMsg = `You successfully sent @${flowData.username} a tip of ${flowData.amount} sat(s) with ZapZap`;
+            document.getElementById('successMessage').textContent = successMsg;
+            showPage(4);
+        }
+
+        function postToTwitter() {
+            const message = encodeURIComponent(`⚡${flowData.message}⚡\nI just zapped you ${flowData.amount} sats zap-zap.me/${flowData.username} - via @ZapZapBot`);
+            const tweetIntent = `https://x.com/intent/tweet?text=${message}&in_reply_to=${flowData.tweetId}`;
+            window.open(tweetIntent, '_blank');
+        }
+
+        function resetFlow() {
+            flowData = {
+                tweetUrl: '',
+                tweetId: '',
+                username: '',
+                message: '',
+                amount: 0
+            };
+            document.getElementById('tweetUrl').value = '';
+            document.getElementById('tipMessage').value = '';
+            document.getElementById('tipAmount').value = '';
+            showPage(1);
+        }
+    </script>
+</body>
+</html>
