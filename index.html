@@ -134,6 +134,23 @@
             text-align: center;
             margin-bottom: 24px;
         }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: -12px;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+
+        .checkbox-container label {
+            cursor: pointer;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -156,6 +173,10 @@
             </button>
             <h1>Send a tip message</h1>
             <textarea id="tipMessage" placeholder="Write your tip message here" rows="4"></textarea>
+            <div class="checkbox-container">
+                <input type="checkbox" id="postOnX" checked>
+                <label for="postOnX">Post on 𝕏</label>
+            </div>
             <button onclick="proceedToAmount()" class="primary" style="width: 100%">
                 Next
             </button>
@@ -185,8 +206,8 @@
             </div>
             <p id="successMessage"></p>
             <div class="button-group" style="flex-direction: column;">
-                <button onclick="postToTwitter()" class="primary">
-                    Tweet it!
+                <button onclick="viewTipTweet()" class="primary">
+                    View Tip Tweet
                 </button>
                 <button onclick="resetFlow()" class="secondary">
                     Send another Tip
@@ -201,7 +222,9 @@
             tweetId: '',
             username: '',
             message: '',
-            amount: 0
+            amount: 0,
+            postOnX: true,
+            tweetIntentUrl: ''
         };
 
         function showPage(pageNum) {
@@ -231,6 +254,7 @@
 
         function proceedToAmount() {
             flowData.message = document.getElementById('tipMessage').value.trim();
+            flowData.postOnX = document.getElementById('postOnX').checked;
             document.getElementById('recipientUsername').textContent = `@${flowData.username}`;
             showPage(3);
         }
@@ -239,13 +263,23 @@
             flowData.amount = document.getElementById('tipAmount').value;
             const successMsg = `You successfully sent @${flowData.username} a tip of ${flowData.amount} sat(s) with ZapZap`;
             document.getElementById('successMessage').textContent = successMsg;
+            
+            // Prepare tweet intent URL
+            const message = encodeURIComponent(`⚡${flowData.message}⚡\nI just zapped you ${flowData.amount} sats zap-zap.me/${flowData.username} - via @ZapZapBot`);
+            flowData.tweetIntentUrl = `https://x.com/intent/tweet?text=${message}&in_reply_to=${flowData.tweetId}`;
+            
             showPage(4);
+            
+            // Auto-trigger Twitter intent if checkbox was checked
+            if (flowData.postOnX) {
+                setTimeout(() => {
+                    window.open(flowData.tweetIntentUrl, '_blank');
+                }, 500); // Small delay to ensure page transition completes first
+            }
         }
 
-        function postToTwitter() {
-            const message = encodeURIComponent(`⚡${flowData.message}⚡\nI just zapped you ${flowData.amount} sats zap-zap.me/${flowData.username} - via @ZapZapBot`);
-            const tweetIntent = `https://x.com/intent/tweet?text=${message}&in_reply_to=${flowData.tweetId}`;
-            window.open(tweetIntent, '_blank');
+        function viewTipTweet() {
+            window.open(flowData.tweetIntentUrl, '_blank');
         }
 
         function resetFlow() {
@@ -254,11 +288,14 @@
                 tweetId: '',
                 username: '',
                 message: '',
-                amount: 0
+                amount: 0,
+                postOnX: true,
+                tweetIntentUrl: ''
             };
             document.getElementById('tweetUrl').value = '';
             document.getElementById('tipMessage').value = '';
             document.getElementById('tipAmount').value = '';
+            document.getElementById('postOnX').checked = true;
             showPage(1);
         }
     </script>
